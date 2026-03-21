@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>儿童识字小报生成器</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>🎈 儿童识字小报生成器</h1>
+
+    <!-- API Key 设置 -->
+    <section class="card">
+      <h2>⚙️ API 设置</h2>
+      <div class="form-group">
+        <label for="apiKey">API Key</label>
+        <input type="password" id="apiKey" placeholder="请输入 Nano Banana Pro API Key">
+        <button id="saveApiKey" class="btn btn-secondary">保存</button>
+      </div>
+      <p class="hint">API Key 保存在浏览器本地，不会发送到服务器</p>
+    </section>
+
+    <!-- 输入主题和标题 -->
+    <section class="card" id="inputSection">
+      <h2>📝 输入小报信息</h2>
+      <div class="form-group">
+        <label for="theme">主题/场景</label>
+        <input type="text" id="theme" placeholder="如：超市、医院、公园、学校、餐厅、家">
+      </div>
+      <div class="form-group">
+        <label for="title">小报标题</label>
+        <input type="text" id="title" placeholder="如：《走进超市》《快乐医院》">
+      </div>
+      <button id="previewBtn" class="btn btn-primary">预览词汇</button>
+    </section>
+
+    <!-- 词汇预览 -->
+    <section class="card" id="vocabSection" style="display: none;">
+      <h2>📋 词汇预览</h2>
+      <div class="vocab-grid">
+        <div class="vocab-group">
+          <h3>🏠 核心角色与设施</h3>
+          <div class="vocab-tags" id="coreTags"></div>
+        </div>
+        <div class="vocab-group">
+          <h3>📦 常见物品/工具</h3>
+          <div class="vocab-tags" id="itemTags"></div>
+        </div>
+        <div class="vocab-group">
+          <h3>🏞️ 环境与装饰</h3>
+          <div class="vocab-tags" id="envTags"></div>
+        </div>
+      </div>
+      <div class="button-group">
+        <button id="editBtn" class="btn btn-secondary">修改</button>
+        <button id="generateBtn" class="btn btn-primary">生成图片</button>
+      </div>
+    </section>
+
+    <!-- 生成状态 -->
+    <section class="card" id="statusSection" style="display: none;">
+      <h2>🖼️ 生成状态</h2>
+      <div id="statusText">正在创建任务...</div>
+      <div class="progress-bar">
+        <div class="progress" id="progress"></div>
+      </div>
+    </section>
+
+    <!-- 显示结果图片 -->
+    <section class="card" id="resultSection" style="display: none;">
+      <h2>✨ 生成结果</h2>
+      <img id="resultImage" alt="生成的儿童识字小报">
+      <div class="button-group">
+        <button id="downloadImage" class="btn btn-primary">下载图片</button>
+        <button id="newGenerate" class="btn btn-secondary">重新生成</button>
+      </div>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

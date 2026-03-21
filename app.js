@@ -1,0 +1,324 @@
+// API 配置
+const API_BASE = 'https://api.kie.ai/api/v1';
+const API_KEY_STORAGE = 'nano_banana_api_key';
+
+// 主题词汇库
+const THEME_VOCABULARY = {
+  '超市': {
+    core: ['shōu yín yuán 收银员', 'huò jià 货架', 'gù kè 顾客', 'yíng yè yuán 营业员'],
+    items: ['píng guǒ 苹果', 'niú nǎi 牛奶', 'miàn bāo 面包', 'shuǐ guǒ 水果', 'shū cài 蔬菜', 'yǐn liào 饮料', 'bǐng gān 饼干', 'tuī chē 推车'],
+    environment: ['chū kǒu 出口', 'rù kǒu 入口', 'dēng 灯', 'qiáng 墙', 'biāo jià 标价']
+  },
+  '医院': {
+    core: ['yī shēng 医生', 'hù shi 护士', 'bìng rén 病人', 'zhěn suǒ 诊所'],
+    items: ['tī wēn jì 体温计', 'tīng zhěn qì 听诊器', 'yào 药', 'bēi zi 杯子', 'chuáng 床', 'yī疗用手推车'],
+    environment: ['zhěn duàn 诊断卡', 'hòu zhěn qū 等候区', 'dēng 灯', 'qiáng 墙', 'guà hào chù 挂号处']
+  },
+  '公园': {
+    core: ['péng you 朋友', 'mā ma 妈妈', 'bà ba 爸爸', 'hái zi 孩子'],
+    items: ['qiū qiān 秋千', 'huá tī 滑梯', 'shā kēng 沙坑', 'cháng yǐ 长椅', 'pēn quán 喷泉', 'huā 花费', 'cǎo 草'],
+    environment: ['lù 路', 'shù 树', 'dēng 灯', 'chǎng 场', 'mén 门']
+  },
+  '学校': {
+    core: ['lǎo shī 老师', 'xué sheng 学生', 'tóng xué 同学', 'bān zhǎng 班长'],
+    items: ['shū běn 本', 'qiān bǐ 铅笔', 'kè zhuō 课桌', 'yǐ zi 椅子', 'hēi bǎn 黒板', 'shū bāo 书包'],
+    environment: ['jiào shì 教室', 'cāo chǎng 操场', 'láng 廊', 'dēng 灯', 'mén 门']
+  },
+  '餐厅': {
+    core: ['chú shī 厨师', 'fú wù yuán 服务员', 'gù kè 顾客', 'lǎo bǎn 老板'],
+    items: ['fàn cān 饭菜', 'kuaì zi 筷子', 'wǎn 碗', 'pán zi 盘子', 'bēi zi 杯子', 'cài dān 菜单'],
+    environment: ['zhuō zi 桌子', 'yǐ zi 椅子', 'dēng 灯', 'qiáng 墙', 'mén 门']
+  },
+  '家': {
+    core: ['bà ba 爸爸', 'mā ma 妈妈', 'hái zi 孩子', 'nǎi nai 奶奶'],
+    items: ['shā fā 沙发', 'diàn shì 电视', 'chuáng 床', 'zhuō zi 桌子', 'yǐ zi 椅子', 'dēng 灯'],
+    environment: ['kè tīng 客厅', 'wò shì 卧室', 'chú fáng 厨房', 'mén 门', 'chuāng 窗']
+  }
+};
+
+const DEFAULT_VOCABULARY = {
+  core: ['rén wù 人物', 'gōng jù 工具', 'wù pǐn 物品', 'shè shī 设施'],
+  items: ['dōng xi 东西', 'yòng pǐn 用品', 'wù jiàn 物件', 'cǎo 草', 'huā 花', 'shù 树'],
+  environment: ['lù 路', 'dēng 灯', 'qiáng 墙', 'mén 门', 'chuāng 窗']
+};
+
+// DOM 元素
+const apiKeyInput = document.getElementById('apiKey');
+const saveApiKeyBtn = document.getElementById('saveApiKey');
+const themeInput = document.getElementById('theme');
+const titleInput = document.getElementById('title');
+const previewBtn = document.getElementById('previewBtn');
+const vocabSection = document.getElementById('vocabSection');
+const coreTags = document.getElementById('coreTags');
+const itemTags = document.getElementById('itemTags');
+const envTags = document.getElementById('envTags');
+const editBtn = document.getElementById('editBtn');
+const generateBtn = document.getElementById('generateBtn');
+const statusSection = document.getElementById('statusSection');
+const statusText = document.getElementById('statusText');
+const progress = document.getElementById('progress');
+const resultSection = document.getElementById('resultSection');
+const resultImage = document.getElementById('resultImage');
+const downloadImageBtn = document.getElementById('downloadImage');
+const newGenerateBtn = document.getElementById('newGenerate');
+
+// 全局变量
+let currentVocab = null;
+let currentTheme = '';
+let currentTitle = '';
+
+// 初始化
+function init() {
+  const savedKey = localStorage.getItem(API_KEY_STORAGE);
+  if (savedKey) {
+    apiKeyInput.value = savedKey;
+  }
+}
+
+// 保存 API Key
+saveApiKeyBtn.addEventListener('click', () => {
+  const key = apiKeyInput.value.trim();
+  if (key) {
+    localStorage.setItem(API_KEY_STORAGE, key);
+    alert('API Key 已保存！');
+  }
+});
+
+// 获取词汇
+function getVocabulary(theme) {
+  const normalizedTheme = theme.trim();
+  if (THEME_VOCABULARY[normalizedTheme]) {
+    return THEME_VOCABULARY[normalizedTheme];
+  }
+  for (const key in THEME_VOCABULARY) {
+    if (normalizedTheme.includes(key) || key.includes(normalizedTheme)) {
+      return THEME_VOCABULARY[key];
+    }
+  }
+  return DEFAULT_VOCABULARY;
+}
+
+// 渲染词汇标签
+function renderVocabTags(vocab) {
+  coreTags.innerHTML = vocab.core.map(v => `<span class="vocab-tag">${v}</span>`).join('');
+  itemTags.innerHTML = vocab.items.map(v => `<span class="vocab-tag">${v}</span>`).join('');
+  envTags.innerHTML = vocab.environment.map(v => `<span class="vocab-tag">${v}</span>`).join('');
+}
+
+// 预览词汇
+previewBtn.addEventListener('click', () => {
+  currentTheme = themeInput.value.trim();
+  currentTitle = titleInput.value.trim();
+
+  if (!currentTheme || !currentTitle) {
+    alert('请输入主题和标题');
+    return;
+  }
+
+  currentVocab = getVocabulary(currentTheme);
+  renderVocabTags(currentVocab);
+
+  vocabSection.style.display = 'block';
+  vocabSection.scrollIntoView({ behavior: 'smooth' });
+});
+
+// 修改
+editBtn.addEventListener('click', () => {
+  vocabSection.style.display = 'none';
+});
+
+// 生成完整提示词
+function buildPrompt(theme, title, vocab) {
+  return `请生成一张儿童识字小报《${title}》，竖版 A4，学习小报版式，适合 5–9 岁孩子 认字与看图识物。
+
+# 一、小报标题区（顶部）
+
+**顶部居中大标题**：《${title}》
+* **风格**：十字小报 / 儿童学习报感
+* **文本要求**：大字、醒目、卡通手写体、彩色描边
+* **装饰**：周围添加与 ${theme} 相关的贴纸风装饰，颜色鲜艳
+
+# 二、小报主体（中间主画面）
+
+画面中心是一幅 **卡通插画风的「${theme}」场景**：
+* **整体气氛**：明亮、温暖、积极
+* **构图**：物体边界清晰，方便对应文字，不要过于拥挤。
+
+**场景分区与核心内容**
+1.  **核心区域 A（主要对象）**：表现 ${theme} 的核心活动。
+2.  **核心区域 B（配套设施）**：展示相关的工具或物品。
+3.  **核心区域 C（环境背景）**：体现环境特征（如墙面、指示牌等）。
+
+**主题人物**
+* **角色**：1 位可爱卡通人物（职业/身份：与 ${theme} 匹配）。
+* **动作**：正在进行与场景相关的自然互动。
+
+# 三、必画物体与识字清单（Generated Content）
+
+**请务必在画面中清晰绘制以下物体，并为其预留贴标签的位置：**
+
+**1. 核心角色与设施：**
+${vocab.core.join(', ')}
+
+**2. 常见物品/工具：**
+${vocab.items.join(', ')}
+
+**3. 环境与装饰：**
+${vocab.environment.join(', ')}
+
+*(注意：画面中的物体数量不限于此，但以上列表必须作为重点描绘对象)*
+
+# 四、识字标注规则
+
+对上述清单中的物体，贴上中文识字标签：
+* **格式**：两行制（第一行拼音带声调，第二行简体汉字）。
+* **样式**：彩色小贴纸风格，白底黑字或深色字，清晰可读。
+* **排版**：标签靠近对应的物体，不遮挡主体。
+
+# 五、画风参数
+* **风格**：儿童绘本风 + 识字小报风
+* **色彩**：高饱和、明快、温暖 (High Saturation, Warm Tone)
+* **质量**：8k resolution, high detail, vector illustration style, clean lines.`;
+}
+
+// 获取 API Key
+function getApiKey() {
+  return localStorage.getItem(API_KEY_STORAGE);
+}
+
+// 创建任务
+async function createTask(prompt) {
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    alert('请先设置 API Key');
+    return null;
+  }
+
+  const response = await fetch(`${API_BASE}/jobs/createTask`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: 'nano-banana-pro',
+      input: {
+        prompt: prompt,
+        image_input: [],
+        aspect_ratio: '9:16',
+        resolution: '2K',
+        output_format: 'png'
+      }
+    })
+  });
+
+  const data = await response.json();
+  return data;
+}
+
+// 查询任务状态
+async function queryTask(taskId) {
+  const apiKey = getApiKey();
+
+  const response = await fetch(`${API_BASE}/jobs/recordInfo?taskId=${taskId}`, {
+    headers: {
+      'Authorization': `Bearer ${apiKey}`
+    }
+  });
+
+  const data = await response.json();
+  return data;
+}
+
+// 生成图片
+generateBtn.addEventListener('click', async () => {
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    alert('请先设置 API Key');
+    return;
+  }
+
+  const prompt = buildPrompt(currentTheme, currentTitle, currentVocab);
+
+  vocabSection.style.display = 'none';
+  statusSection.style.display = 'block';
+  statusText.textContent = '正在创建任务...';
+  progress.style.width = '30%';
+
+  try {
+    const createResult = await createTask(prompt);
+
+    if (createResult.code !== 200) {
+      throw new Error(createResult.msg || '创建任务失败');
+    }
+
+    const taskId = createResult.data.taskId;
+    statusText.textContent = '任务已创建，正在生成图片...';
+    progress.style.width = '50%';
+
+    let result = null;
+    let retries = 0;
+    const maxRetries = 60;
+
+    while (retries < maxRetries) {
+      await new Promise(resolve => setTimeout(resolve, 5000));
+
+      result = await queryTask(taskId);
+
+      if (result.code !== 200) {
+        throw new Error(result.msg || '查询任务失败');
+      }
+
+      const state = result.data.state;
+
+      if (state === 'success') {
+        progress.style.width = '100%';
+        statusText.textContent = '生成完成！';
+
+        const resultJson = JSON.parse(result.data.resultJson);
+        const imageUrl = resultJson.resultUrls[0];
+
+        resultImage.src = imageUrl;
+        resultSection.style.display = 'block';
+        statusSection.style.display = 'none';
+        resultSection.scrollIntoView({ behavior: 'smooth' });
+        return;
+      } else if (state === 'fail') {
+        throw new Error(result.data.failMsg || '生成失败');
+      }
+
+      statusText.textContent = `生成中... (${Math.floor(retries * 5 / 60)}分钟)`;
+      progress.style.width = `${50 + (retries / maxRetries * 50)}%`;
+      retries++;
+    }
+
+    throw new Error('生成超时，请重试');
+
+  } catch (error) {
+    alert('生成失败: ' + error.message);
+    statusSection.style.display = 'none';
+    vocabSection.style.display = 'block';
+  }
+});
+
+// 下载图片
+downloadImageBtn.addEventListener('click', () => {
+  const link = document.createElement('a');
+  link.href = resultImage.src;
+  link.download = `儿童识字小报_${Date.now()}.png`;
+  link.click();
+});
+
+// 重新生成
+newGenerateBtn.addEventListener('click', () => {
+  resultSection.style.display = 'none';
+  progress.style.width = '0%';
+  themeInput.value = '';
+  titleInput.value = '';
+  currentTheme = '';
+  currentTitle = '';
+  currentVocab = null;
+});
+
+// 初始化
+init();
