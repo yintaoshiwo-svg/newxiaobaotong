@@ -1,6 +1,6 @@
 // Supabase 配置
-const SUPABASE_URL = 'https://ujbuxnbrkkvzlswseqapt.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqYnV4bmJya2t2emxzd2VxYXB0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwMDU3ODMsImV4cCI6MjA4OTU4MTc4M30.uzXGN07vK4VZFBPuUqSQqPgqlxp0lWBv4h5DOh0ztvc';
+const SUPABASE_URL = 'https://ujbuxnbrkkvzlsweqapt.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_7yxGStLHsGGk08-KAMf35g_xKPxROxa';
 
 // 检查 Supabase 是否加载
 if (!window.supabase) {
