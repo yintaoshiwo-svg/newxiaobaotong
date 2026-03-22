@@ -7,18 +7,62 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="container">
-    <h1>🎈 儿童识字小报生成器</h1>
+  <!-- 登录页面 -->
+  <div id="authPage" class="auth-container">
+    <div class="auth-card">
+      <h1 class="auth-title">儿童识字小报</h1>
+      <p class="auth-subtitle">AI 驱动的儿童认字学习工具</p>
+
+      <div class="auth-tabs">
+        <button id="loginTab" class="auth-tab active">登录</button>
+        <button id="registerTab" class="auth-tab">注册</button>
+      </div>
+
+      <form id="authForm">
+        <div class="form-group">
+          <label for="email">邮箱</label>
+          <input type="email" id="email" placeholder="输入邮箱" required>
+        </div>
+        <div class="form-group password-group">
+          <label for="password">密码</label>
+          <div class="password-input-wrapper">
+            <input type="password" id="password" placeholder="输入密码" required>
+            <button type="button" id="togglePassword" class="toggle-password">👁</button>
+          </div>
+        </div>
+        <div class="form-group password-group" id="confirmGroup" style="display: none;">
+          <label for="confirmPassword">确认密码</label>
+          <div class="password-input-wrapper">
+            <input type="password" id="confirmPassword" placeholder="再次输入密码">
+            <button type="button" id="toggleConfirmPassword" class="toggle-password">👁</button>
+          </div>
+        </div>
+        <p id="authError" class="auth-error"></p>
+        <button type="submit" class="btn btn-primary" id="authSubmit">登录</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 主应用页面 -->
+  <div id="appPage" class="container" style="display: none;">
+    <header class="app-header">
+      <h1>🎈 儿童识字小报生成器</h1>
+      <div class="user-info">
+        <span id="welcomeText"></span>
+        <button id="logoutBtn" class="btn btn-secondary btn-small">退出</button>
+      </div>
+    </header>
 
     <!-- API Key 设置 -->
     <section class="card">
       <h2>⚙️ API 设置</h2>
-      <div class="form-group">
-        <label for="apiKey">API Key</label>
-        <input type="password" id="apiKey" placeholder="请输入 Nano Banana Pro API Key">
+      <div class="form-group-inline">
+        <div class="form-group" style="margin-bottom: 0;">
+          <input type="password" id="apiKey" placeholder="请输入 Nano Banana Pro API Key">
+        </div>
         <button id="saveApiKey" class="btn btn-secondary">保存</button>
       </div>
-      <p class="hint">API Key 保存在浏览器本地，不会发送到服务器</p>
+      <p class="hint">API Key 保存在云端，可在不同设备同步</p>
     </section>
 
     <!-- 输入主题和标题 -->
@@ -78,6 +122,7 @@
     </section>
   </div>
 
+  <script src="https://unpkg.com/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

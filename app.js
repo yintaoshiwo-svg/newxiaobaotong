@@ -1,6 +1,17 @@
+// Supabase 配置
+const SUPABASE_URL = 'https://ujbuxnbrkkvzlswseqapt.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_7yxGStLHsGGk08-KAMf35g_xKPxROxa';
+
+// 检查 Supabase 是否加载
+if (!window.supabase) {
+  console.error('Supabase SDK 未加载');
+}
+
+// 初始化 Supabase
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 // API 配置
 const API_BASE = 'https://api.kie.ai/api/v1';
-const API_KEY_STORAGE = 'nano_banana_api_key';
 
 // 主题词汇库
 const THEME_VOCABULARY = {
@@ -43,6 +54,17 @@ const DEFAULT_VOCABULARY = {
 };
 
 // DOM 元素
+const authPage = document.getElementById('authPage');
+const appPage = document.getElementById('appPage');
+const loginTab = document.getElementById('loginTab');
+const registerTab = document.getElementById('registerTab');
+const authForm = document.getElementById('authForm');
+const confirmGroup = document.getElementById('confirmGroup');
+const authSubmit = document.getElementById('authSubmit');
+const authError = document.getElementById('authError');
+const welcomeText = document.getElementById('welcomeText');
+const logoutBtn = document.getElementById('logoutBtn');
+
 const apiKeyInput = document.getElementById('apiKey');
 const saveApiKeyBtn = document.getElementById('saveApiKey');
 const themeInput = document.getElementById('theme');
@@ -66,21 +88,248 @@ const newGenerateBtn = document.getElementById('newGenerate');
 let currentVocab = null;
 let currentTheme = '';
 let currentTitle = '';
+let isLoginMode = true;
+let currentUser = null;
 
-// 初始化
+// ============ 密码显示切换 ============
+
+function setupPasswordToggle(toggleBtn, input) {
+  toggleBtn.addEventListener('click', () => {
+    if (input.type === 'password') {
+      input.type = 'text';
+      toggleBtn.textContent = '🙈';
+    } else {
+      input.type = 'password';
+      toggleBtn.textContent = '👁';
+    }
+  });
+}
+
+// ============ Supabase 认证函数 ============
+
+async function signUp(email, password) {
+  const { data, error } = await supabase.auth.signUp({
+    email: email,
+    password: password
+  });
+  return { data, error };
+}
+
+async function signIn(email, password) {
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: email,
+    password: password
+  });
+  return { data, error };
+}
+
+async function signOut() {
+  const { error } = await supabase.auth.signOut();
+  return { error };
+}
+
+async function getSession() {
+  const { data } = await supabase.auth.getSession();
+  return data.session;
+}
+
+// ============ Supabase 数据库函数 ============
+
+async function getApiKey(userId) {
+  const { data, error } = await supabase
+    .from('user_api_keys')
+    .select('api_key')
+    .eq('user_id', userId)
+    .single();
+
+  if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+    console.error('获取 API Key 失败:', error);
+    return null;
+  }
+  return data ? data.api_key : null;
+}
+
+async function saveApiKey(userId, apiKey) {
+  const { data, error } = await supabase
+    .from('user_api_keys')
+    .upsert({
+      user_id: userId,
+      api_key: apiKey
+    });
+
+  return { data, error };
+}
+
+// ============ 认证界面 ============
+
+function showAuthPage() {
+  authPage.style.display = 'flex';
+  appPage.style.display = 'none';
+}
+
+function showAppPage() {
+  authPage.style.display = 'none';
+  appPage.style.display = 'block';
+  welcomeText.textContent = `欢迎，${currentUser.email}`;
+}
+
+function switchToLogin() {
+  isLoginMode = true;
+  loginTab.classList.add('active');
+  registerTab.classList.remove('active');
+  confirmGroup.style.display = 'none';
+  authSubmit.textContent = '登录';
+  authError.textContent = '';
+}
+
+function switchToRegister() {
+  isLoginMode = false;
+  loginTab.classList.remove('active');
+  registerTab.classList.add('active');
+  confirmGroup.style.display = 'block';
+  authSubmit.textContent = '注册';
+  authError.textContent = '';
+}
+
+async function handleAuth(e) {
+  e.preventDefault();
+
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const confirmPassword = document.getElementById('confirmPassword').value;
+
+  if (!email || !password) {
+    authError.textContent = '请输入邮箱和密码';
+    return;
+  }
+
+  authError.textContent = '处理中...';
+
+  try {
+    if (isLoginMode) {
+      // 登录
+      const { data, error } = await signIn(email, password);
+
+      if (error) {
+        authError.textContent = error.message;
+        return;
+      }
+
+      currentUser = data.user;
+      alert('登录成功！');
+      showAppPage();
+      loadUserApiKey();
+
+    } else {
+      // 注册
+      if (password.length < 6) {
+        authError.textContent = '密码至少6位';
+        return;
+      }
+      if (password !== confirmPassword) {
+        authError.textContent = '两次密码不一致';
+        return;
+      }
+
+      authError.textContent = '注册中...';
+      const { data, error } = await signUp(email, password);
+
+      if (error) {
+        authError.textContent = error.message;
+        return;
+      }
+
+      alert('注册成功！请查收验证邮件后登录。');
+      switchToLogin();
+      document.getElementById('password').value = '';
+    }
+  } catch (err) {
+    authError.textContent = '操作失败: ' + err.message;
+    console.error('Auth error:', err);
+  }
+}
+
+async function logout() {
+  await signOut();
+  currentUser = null;
+  document.getElementById('email').value = '';
+  document.getElementById('password').value = '';
+  document.getElementById('confirmPassword').value = '';
+  apiKeyInput.value = '';
+  switchToLogin();
+  showAuthPage();
+}
+
+async function loadUserApiKey() {
+  if (!currentUser) return;
+
+  const apiKey = await getApiKey(currentUser.id);
+  if (apiKey) {
+    apiKeyInput.value = apiKey;
+  }
+}
+
+// ============ 应用函数 ============
+
 function init() {
-  const savedKey = localStorage.getItem(API_KEY_STORAGE);
-  if (savedKey) {
-    apiKeyInput.value = savedKey;
+  // 检查当前会话
+  getSession().then(async (session) => {
+    if (session?.user) {
+      currentUser = session.user;
+      showAppPage();
+      loadUserApiKey();
+    } else {
+      showAuthPage();
+      switchToLogin();
+    }
+  });
+
+  // 监听认证状态变化
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_IN' && session?.user) {
+      currentUser = session.user;
+      showAppPage();
+      loadUserApiKey();
+    } else if (event === 'SIGNED_OUT') {
+      currentUser = null;
+      showAuthPage();
+      switchToLogin();
+    }
+  });
+
+  // 绑定密码显示切换
+  const togglePassword = document.getElementById('togglePassword');
+  const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
+  const passwordInput = document.getElementById('password');
+  const confirmPasswordInput = document.getElementById('confirmPassword');
+
+  if (togglePassword && passwordInput) {
+    setupPasswordToggle(togglePassword, passwordInput);
+  }
+  if (toggleConfirmPassword && confirmPasswordInput) {
+    setupPasswordToggle(toggleConfirmPassword, confirmPasswordInput);
   }
 }
 
 // 保存 API Key
-saveApiKeyBtn.addEventListener('click', () => {
+saveApiKeyBtn.addEventListener('click', async () => {
   const key = apiKeyInput.value.trim();
-  if (key) {
-    localStorage.setItem(API_KEY_STORAGE, key);
-    alert('API Key 已保存！');
+  if (!key) {
+    alert('请输入 API Key');
+    return;
+  }
+
+  if (!currentUser) {
+    alert('请先登录');
+    return;
+  }
+
+  const { error } = await saveApiKey(currentUser.id, key);
+
+  if (error) {
+    alert('保存失败: ' + error.message);
+  } else {
+    alert('API Key 已保存到云端！');
   }
 });
 
@@ -182,13 +431,14 @@ ${vocab.environment.join(', ')}
 }
 
 // 获取 API Key
-function getApiKey() {
-  return localStorage.getItem(API_KEY_STORAGE);
+async function getApiKey() {
+  if (!currentUser) return null;
+  return await getApiKey(currentUser.id);
 }
 
 // 创建任务
 async function createTask(prompt) {
-  const apiKey = getApiKey();
+  const apiKey = await getApiKey();
   if (!apiKey) {
     alert('请先设置 API Key');
     return null;
@@ -218,7 +468,7 @@ async function createTask(prompt) {
 
 // 查询任务状态
 async function queryTask(taskId) {
-  const apiKey = getApiKey();
+  const apiKey = await getApiKey();
 
   const response = await fetch(`${API_BASE}/jobs/recordInfo?taskId=${taskId}`, {
     headers: {
@@ -232,7 +482,7 @@ async function queryTask(taskId) {
 
 // 生成图片
 generateBtn.addEventListener('click', async () => {
-  const apiKey = getApiKey();
+  const apiKey = await getApiKey();
   if (!apiKey) {
     alert('请先设置 API Key');
     return;
@@ -320,5 +570,13 @@ newGenerateBtn.addEventListener('click', () => {
   currentVocab = null;
 });
 
-// 初始化
+// ============ 事件绑定 ============
+
+loginTab.addEventListener('click', switchToLogin);
+registerTab.addEventListener('click', switchToRegister);
+authForm.addEventListener('submit', handleAuth);
+logoutBtn.addEventListener('click', logout);
+
+// ============ 初始化 ============
+
 init();
