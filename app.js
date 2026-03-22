@@ -1,5 +1,5 @@
 // Supabase 配置
-const SUPABASE_URL = 'https://ujbuxnbrkkvzlsweqapt.supabase.co';
+const SUPABASE_URL = 'https://ujbuxnbrkkvzlswseqapt.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_7yxGStLHsGGk08-KAMf35g_xKPxROxa';
 
 // 检查 Supabase 是否加载
